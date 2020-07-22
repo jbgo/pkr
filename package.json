@@ -5,8 +5,15 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test.js",
+    "server": "node server.js"
   },
   "author": "Jordan Bach",
-  "license": "SEE LICENSE IN LICENSE.txt"
+  "license": "SEE LICENSE IN LICENSE.txt",
+  "dependencies": {
+    "remark-footnotes": "^1.0.0",
+    "remark-html": "^11.0.2",
+    "remark-parse": "^8.0.3",
+    "unified": "^9.0.0"
+  }
 }
