@@ -1,8 +1,12 @@
-import { start } from "./lib/server.js"
+import { Repository, HTTPServer } from './lib/index.js'
 
-start({
-  repo: "/home/jordan/mypkr",
-  root: "/home/jordan/pkr/out",
-  address: "0.0.0.0",
+const repo = new Repository({
+  title: 'Open Solitude',
+  rootPath: '/home/jordan/pkr'
+})
+
+HTTPServer.start({
+  repository: repo,
+  address: 'localhost',
   port: 8080
 })
