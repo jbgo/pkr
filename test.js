@@ -4,11 +4,16 @@ import { promises as fsPromises } from 'fs'
 class TestReporter {
   constructor() {
     this.passed = []
+    this.skipped = []
     this.failed = []
   }
 
   pass(testCase, testMethod) {
     this.passed.push({testCase: testCase, testMethod: testMethod})
+  }
+
+  skip(testCase, testMethod) {
+    this.skipped.push({testCase: testCase, testMethod: testMethod})
   }
 
   fail(testCase, testMethod, err) {
@@ -22,6 +27,7 @@ class TestReporter {
 
     console.log('\n---\n')
     this.passed.forEach((result) => console.log('PASS', result.testCase.name, result.testMethod))
+    this.skipped.forEach((result) => console.log('SKIP', result.testCase.name, result.testMethod))
     this.failed.forEach((result) => {
       console.log('\nFAIL', result.testCase.name, result.testMethod)
       console.group()
@@ -93,8 +99,12 @@ const runTest = async (testCase, testMethod) => {
   return new Promise(async (resolve, reject) => {
     try {
       if (test.setup) await test.setup()
-      await test[testMethod]()
-      reporter.pass(testCase, testMethod)
+      let result = await test[testMethod]()
+      if (typeof result === 'string' && result.toLowerCase().startsWith('skip')) {
+        reporter.skip(testCase, testMethod)
+      } else {
+        reporter.pass(testCase, testMethod)
+      }
     } catch(err) {
       reporter.fail(testCase, testMethod, err)
     } finally {
