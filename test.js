@@ -1,6 +1,50 @@
 import path from 'path'
 import { promises as fsPromises } from 'fs'
 
+class TestReporter {
+  constructor() {
+    this.passed = []
+    this.failed = []
+  }
+
+  pass(testCase, testMethod) {
+    this.passed.push({testCase: testCase, testMethod: testMethod})
+  }
+
+  fail(testCase, testMethod, err) {
+    this.failed.push({testCase: testCase, testMethod: testMethod, err: err})
+  }
+
+  summarize() {
+    let totalPassed = this.passed.length
+    let totalFailed = this.failed.length
+    let total = totalPassed + totalFailed
+
+    console.log('\n---\n')
+    this.passed.forEach((result) => console.log('PASS', result.testCase.name, result.testMethod))
+    this.failed.forEach((result) => {
+      console.log('\nFAIL', result.testCase.name, result.testMethod)
+      console.group()
+      console.log(this.cleanStackTrace(result.err.stack))
+      console.groupEnd()
+    })
+    console.log('\n---')
+    console.log(`${total} Tests. ${totalPassed} Passed. ${totalFailed} Failed.`)
+
+    if (totalFailed > 0) {
+      process.exit(1)
+    }
+  }
+
+  cleanStackTrace(stack) {
+    let stackLines = stack.split('\n')
+    let testStartIndex = stackLines.findIndex((line) => line.includes(process.cwd() + '/test.js:'))
+    return stackLines.slice(0, testStartIndex).join('\n')
+  }
+}
+
+let reporter = new TestReporter()
+
 const reportPass = (testCase, testMethod) => {
   console.log('PASS', testCase.name, testMethod)
 }
@@ -12,15 +56,23 @@ const reportFail = (testCase, testMethod, err) => {
   console.groupEnd()
 }
 
+const filterTestFiles = (dirents) => {
+  let testArgs = process.argv.slice(2)
+  if (testArgs.length > 0) {
+    return testArgs.map((fileName) => fileName.replace(/^\.?\/?test\//, ''))
+  }
+
+  return dirents
+    .filter((dirent) => dirent.name.endsWith('_test.js'))
+    .map((dirent) => dirent.name)
+}
+
 const loadTestCases = async () => {
   const dirents =
     await fsPromises
       .readdir('./test', { withFileTypes: true })
 
-  const testFiles =
-    dirents
-      .filter((dirent) => dirent.name.endsWith('_test.js'))
-      .map((dirent) => dirent.name)
+  const testFiles = filterTestFiles(dirents)
 
   const imports =
     testFiles
@@ -42,14 +94,15 @@ const runTest = async (testCase, testMethod) => {
     try {
       if (test.setup) await test.setup()
       await test[testMethod]()
-      reportPass(testCase, testMethod)
+      reporter.pass(testCase, testMethod)
     } catch(err) {
-      reportFail(testCase, testMethod, err)
+      reporter.fail(testCase, testMethod, err)
     } finally {
       try {
         if (test.teardown) await test.teardown()
         resolve()
       } catch(err) {
+        reporter.fail(testCase, testMethod, err)
         reject(err)
       }
     }
@@ -67,7 +120,7 @@ const runTestCase = async (testCase) => {
       await testCase.setup()
     }
   } catch(err) {
-    reportFail(testCase, 'static setup', err)
+    reporter.fail(testCase, 'static setup', err)
   }
 
   await Promise.all(
@@ -79,13 +132,14 @@ const runTestCase = async (testCase) => {
       await testCase.teardown()
     }
   } catch(err) {
-    reportFail(testCase, 'static teardown', err)
+    reporter.fail(testCase, 'static teardown', err)
   }
 }
 
 const runTestSuite = async () => {
   let testCases = await loadTestCases()
-  testCases.forEach(runTestCase)
+  await Promise.all(testCases.map(runTestCase))
+  reporter.summarize()
 }
 
 runTestSuite()

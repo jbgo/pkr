@@ -3,13 +3,6 @@ import path from 'path'
 import { strict as assert } from 'assert'
 import { Repository, HTTPServer } from '../lib/index.js'
 
-// TODO: tests
-// # Test 1: 404 Not Found
-// - create tests/fixtures/repo/*.md
-// - start pkr/server
-// - make get request for file that does not exist
-// - assert 404 response
-
 export class ServerTest {
   static setup() {
     const repo = new Repository({
