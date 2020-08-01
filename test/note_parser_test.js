@@ -61,6 +61,9 @@ spans multiple lines.
 * sleeping bag
 * socks
 * head lamp
+
+- this is also
+- an unordered list
 `)
     assert.deepStrictEqual(parser.tree.toArray(),
       [':DOC',
@@ -68,19 +71,20 @@ spans multiple lines.
           [':LI', [':TEXT', 'backpack']],
           [':LI', [':TEXT', 'sleeping bag']],
           [':LI', [':TEXT', 'socks']],
-          [':LI', [':TEXT', 'head lamp']]]])
+          [':LI', [':TEXT', 'head lamp']]],
+        [':UL',
+          [':LI', [':TEXT', 'this is also']],
+          [':LI', [':TEXT', 'an unordered list']]]])
   }
 
   testHyperlink() {
-    return 'skip'
-    const text =
+    let parser = this.parseNote(
 `
 This code is [hosted on GitHub](https://github.com/jbgo/pkr).
-`
-    let tree = NoteParser.parse(text)
-    assert.deepStrictEqual(tree,
+`)
+    assert.deepStrictEqual(parser.tree.toArray(),
       [':DOC',
-        [':P',
+        [':BLOCK',
           [':TEXT', 'This code is'],
           [':LINK',
             {'url': 'https://github.com/jbgo/pkr'},
