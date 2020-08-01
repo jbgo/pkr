@@ -8,6 +8,12 @@ export class NoteParserTest {
     return parser
   }
 
+  assertParse(noteText, expectedTree, debug = false) {
+    let parser = new NoteParser(noteText, debug)
+    parser.parse()
+    assert.deepStrictEqual(parser.tree.toArray(), expectedTree)
+  }
+
   testEmpty() {
     let parser = this.parseNote('')
     assert.deepStrictEqual(parser.tree.toArray(), [':DOC'])
@@ -55,7 +61,7 @@ spans multiple lines.
   }
 
   testUL() {
-    let parser = this.parseNote(
+    const noteText =
 `
 * backpack
 * sleeping bag
@@ -63,9 +69,11 @@ spans multiple lines.
 * head lamp
 
 - this is also
-- an unordered list
-`)
-    assert.deepStrictEqual(parser.tree.toArray(),
+- an un-ordered list
+- and 2 * 2 = 4
+`
+
+    const expectedTree =
       [':DOC',
         [':UL',
           [':LI', [':TEXT', 'backpack']],
@@ -74,21 +82,27 @@ spans multiple lines.
           [':LI', [':TEXT', 'head lamp']]],
         [':UL',
           [':LI', [':TEXT', 'this is also']],
-          [':LI', [':TEXT', 'an unordered list']]]])
+          [':LI', [':TEXT', 'an un-ordered list']],
+          [':LI', [':TEXT', 'and 2 * 2 = 4']]]]
+
+    this.assertParse(noteText, expectedTree)
   }
 
   testHyperlink() {
-    let parser = this.parseNote(
+    const noteText =
 `
 This code is [hosted on GitHub](https://github.com/jbgo/pkr).
-`)
-    assert.deepStrictEqual(parser.tree.toArray(),
+`
+
+    const expectedTree =
       [':DOC',
         [':BLOCK',
-          [':TEXT', 'This code is'],
+          [':TEXT', 'This code is '],
           [':LINK',
             {'url': 'https://github.com/jbgo/pkr'},
             [':TEXT', 'hosted on GitHub']],
-          [':TEXT', '.']]])
+          [':TEXT', '.']]]
+
+    this.assertParse(noteText, expectedTree, true)
   }
 }
