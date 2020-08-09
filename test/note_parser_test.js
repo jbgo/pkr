@@ -2,66 +2,76 @@ import { strict as assert } from 'assert'
 import { NoteParser } from '../lib/note_parser.js'
 
 export class NoteParserTest {
-  parseNote(text, debug = false) {
-    let parser = new NoteParser(text, debug)
-    parser.parse()
-    return parser
-  }
 
   assertParse(noteText, expectedTree, debug = false) {
     let parser = new NoteParser(noteText, debug)
     parser.parse()
-    assert.deepStrictEqual(parser.tree.toArray(), expectedTree)
+    assert.deepStrictEqual(parser.toArray(), expectedTree)
   }
 
   testEmpty() {
-    let parser = this.parseNote('')
-    assert.deepStrictEqual(parser.tree.toArray(), [':DOC'])
+    let text = ''
+
+    let expected = [':DOC']
+
+    this.assertParse(text, expected)
   }
 
   testSentence() {
-    let parser = this.parseNote('This is a simple sentence.')
-    assert.deepStrictEqual(parser.tree.toArray(),
+    let text = 'This is a simple sentence.'
+
+    let expected =
       [':DOC',
         [':BLOCK',
-          [':TEXT', 'This is a simple sentence.']]])
+          [':TEXT', 'This is a simple sentence.']]]
+
+    this.assertParse(text, expected)
   }
 
   testParagraphs() {
-    let parser = this.parseNote(
+    let text =
 `This is the first paragraph.
 
-This is the second paragraph.`)
-    assert.deepStrictEqual(parser.tree.toArray(),
+This is the second paragraph.`
+
+    let expected =
       [':DOC',
         [':BLOCK',
-          [':TEXT', 'This is the first paragraph.']],
+          [':TEXT', 'This is the first paragraph.\n']],
         [':BLOCK',
-          [':TEXT', 'This is the second paragraph.']]])
+          [':TEXT', 'This is the second paragraph.']]]
+
+    this.assertParse(text, expected)
   }
 
   testMultilineParagraph() {
-    let parser = this.parseNote(
+    let text =
 `
 This is a paragraph that
 spans multiple lines.
-`)
-    assert.deepStrictEqual(parser.tree.toArray(),
+`
+
+    let expected =
       [':DOC',
         [':BLOCK',
-          [':TEXT', 'This is a paragraph that spans multiple lines.']]])
+          [':TEXT', 'This is a paragraph that spans multiple lines.\n']]]
+
+    this.assertParse(text, expected)
   }
 
   testH1() {
-    let parser = this.parseNote('# this is a heading')
-    assert.deepStrictEqual(parser.tree.toArray(),
+    let text = '# this is a heading'
+
+    let expected =
       [':DOC',
         [':H1',
-          [':TEXT', 'this is a heading']]])
+          [':TEXT', 'this is a heading']]]
+
+    this.assertParse(text, expected)
   }
 
   testUL() {
-    const noteText =
+    let text =
 `
 * backpack
 * sleeping bag
@@ -73,36 +83,56 @@ spans multiple lines.
 - and 2 * 2 = 4
 `
 
-    const expectedTree =
+    let expected =
       [':DOC',
         [':UL',
-          [':LI', [':TEXT', 'backpack']],
-          [':LI', [':TEXT', 'sleeping bag']],
-          [':LI', [':TEXT', 'socks']],
-          [':LI', [':TEXT', 'head lamp']]],
+          [':LI', [':TEXT', 'backpack\n']],
+          [':LI', [':TEXT', 'sleeping bag\n']],
+          [':LI', [':TEXT', 'socks\n']],
+          [':LI', [':TEXT', 'head lamp\n']]],
         [':UL',
-          [':LI', [':TEXT', 'this is also']],
-          [':LI', [':TEXT', 'an un-ordered list']],
-          [':LI', [':TEXT', 'and 2 * 2 = 4']]]]
+          [':LI', [':TEXT', 'this is also\n']],
+          [':LI', [':TEXT', 'an un-ordered list\n']],
+          [':LI', [':TEXT', 'and 2 * 2 = 4\n']]]]
 
-    this.assertParse(noteText, expectedTree)
+    this.assertParse(text, expected)
   }
 
   testHyperlink() {
-    const noteText =
+    let text =
 `
 This code is [hosted on GitHub](https://github.com/jbgo/pkr).
 `
 
-    const expectedTree =
+    let expected =
       [':DOC',
         [':BLOCK',
           [':TEXT', 'This code is '],
           [':LINK',
             {'url': 'https://github.com/jbgo/pkr'},
             [':TEXT', 'hosted on GitHub']],
-          [':TEXT', '.']]]
+          [':TEXT', '.\n']]]
 
-    this.assertParse(noteText, expectedTree, true)
+    this.assertParse(text, expected)
   }
+
+  testBold() {
+    let text =
+`Hello. __This text is bold.__ However, __this text is not.
+
+**This text is also bold**. But then again, **this text is not.`
+
+    let expected =
+      [':DOC',
+        [':BLOCK',
+          [':TEXT', 'Hello. '],
+          [':BOLD', 'This text is bold.'],
+          [':TEXT', ' However, __this text is not.\n']],
+        [':BLOCK',
+          [':BOLD', 'This text is also bold'],
+          [':TEXT', '. But then again, **this text is not.']]]
+
+    this.assertParse(text, expected)
+  }
+
 }
